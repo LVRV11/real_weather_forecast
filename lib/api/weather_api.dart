@@ -1,23 +1,37 @@
 import 'dart:convert';
-// import 'dart:developer';
-// import 'package:real_weather_forecast/utilities/location.dart';
+import 'dart:developer';
+import 'package:real_weather_forecast/utilities/location.dart';
 import 'package:http/http.dart' as http;
 import 'package:real_weather_forecast/models/weather_forecast_daily.dart';
 import 'package:real_weather_forecast/utilities/constants.dart';
 
 class WeatherApi {
   Future<WeatherForecast> fetchWeatherForecast(
-      {required String cityName}) async {
-    var queryParameters = {
-      'APPID': Constants.WEATHER_APP_ID,
-      'units': 'metric',
-      'q': cityName,
-    };
+      {required String city, required bool isCity}) async {
+    Location location = Location();
+    await location.getCurrentLocation();
+    Map<String, String> parameters;
+
+    if (isCity == true) {
+      var params = {
+        'appid': Constants.WEATHER_APP_ID,
+        'units': 'metric',
+        'q': city
+      };
+      parameters = params;
+    } else {
+      var params = {
+        'appid': Constants.WEATHER_APP_ID,
+        'units': 'metric',
+        'lat': location.latitude.toString(),
+        'lon': location.longitude.toString(),
+      };
+      parameters = params;
+    }
 
     var uri = Uri.https(Constants.WEATHER_BASE_URL_DOMAIN,
-        Constants.WEATHER_FORECAST_PATH, queryParameters);
-
-    print('request: ${uri.toString()}');
+        Constants.WEATHER_FORECAST_PATH, parameters);
+    log('request: ${uri.toString()}');
 
     var response = await http.get(uri);
 
@@ -26,7 +40,7 @@ class WeatherApi {
     if (response.statusCode == 200) {
       return WeatherForecast.fromJson(json.decode(response.body));
     } else {
-      throw Exception('Error response');
+      return Future.error('Error response');
     }
   }
 }
